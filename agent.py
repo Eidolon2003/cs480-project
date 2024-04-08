@@ -3,13 +3,16 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as f
 import os
+import numpy as np
+from collections import deque
+
 import random
 
 class NETWORK(nn.Module):
         def __init__(self, n_obv, n_action):
             super().__init__()
             self.linear1 = nn.Linear(n_obv, 256)
-            self.linear2 = nn.Linear(n_action, 256)
+            self.linear2 = nn.Linear(256, n_action)
 
         def forward(self, train):
             train = self.relu(self.linear1(train))
@@ -30,14 +33,7 @@ class MODEL:
 
 
 
-        def chooseAction(self, state):
-            if random.random() < self.epsilon:
-                action = random.randint(0, 2)
-            else:
-                stateTensor = torch.tensor(state, dtype=torch.float)
-                qValues = self.model(stateTensor)
-                action = torch.argmax(qValues).item()
-            return action
+
 
         def trainStep(self, state, action, reward, nextState, done):
             state = torch.tensor(state, dtype=torch.float)
@@ -70,17 +66,22 @@ class MODEL:
 
 
 class Agent:
+
+
+
     def __init__(self):
         self.game = 0
         self.epsilon = 0
         self.discount_rate = 0.9
-
+        self.mem = deque(maxlen=100000)
+        self.model = NETWORK(10, 3)
+        self.trained = MODEL(self.model)
 
     def chooseAction(self, state):
         if random.random() < self.epsilon:
             action = random.randint(0, 2)
         else:
             stateTensor = torch.tensor(state, dtype=torch.float)
-            qValues = self.model(stateTensor)
+            qValues = self.mod.model(stateTensor)
             action = torch.argmax(qValues).item()
         return action
