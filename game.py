@@ -1,25 +1,24 @@
 import turtle as tr
-import torch
-import breaks
-from agent import Agent, MODEL, NETWORK
+from enum import Enum
 from paddle import Mover
 from ball import Hitter
 from breaks import Wall
 from score import Scoreboard
 from ui import ui
+import numpy as np
 import time
 
 
 
+class MOVE(Enum):
+    NO = 0
+    LEFT = 1
+    RIGHT = 2
 
-class game:
+class PLAY:
     def __init__(self):
 
         self.screen = tr.Screen()
-
-
-
-
 
         self.screen.setup(width=1200, height=600)
         self.screen.bgcolor('black')
@@ -27,7 +26,6 @@ class game:
 
         self.UI = ui()
         self.UI.text()
-        #self.MODEL = MODEL()
 
         self.score = Scoreboard(lives=5)
 
@@ -38,7 +36,6 @@ class game:
 
         self.inProgress = True
 
-
         self.screen.listen()
         self.screen.onkey(key='Left', fun=self.player.moveLeft)
         self.screen.onkey(key='Right', fun=self.player.moveRight)
@@ -47,14 +44,14 @@ class game:
         self.score.reset()
         self.player.reset()
         self.objective.reset()
-        self.bricks.reset()
+        self.bricks = Wall()
         self.reward = 0
         self.inProgress = True
 
-    def playStep(self):
+    def playStep(self, action):
+        self.inProgress =True
         while self.inProgress:
-            self.screen.update()
-            time.sleep(.01)
+
             state = {
                 'agentXCor': self.player.xcor(),
                 'objXCor': self.objective.xcor(),
@@ -62,35 +59,37 @@ class game:
                 'brickQuan': len(self.bricks.bricks),
                 'brickLayout': [(brick.xcor(), brick.ycor()) for brick in self.bricks.bricks]
             }
+            print(state)
 
-            #action = self.MODEL.chooseAction(state=state)
-
-            # if action == 0:
-            #     self.player
-            # elif action == 1:
-            #     self.player.moveLeft()
-            # elif action == 2:
-            #     self.player.moveRight()
+            self._move(action)
 
             self.objective.fly()
             self.blockHit()
             self.paddleHit()
             self.hasHit()
-            if len(self.bricks.bricks) == 0:
-                self.UI.gameOver(win=True)
-                break
+            done = len(self.bricks.bricks) == 0 or self.score.lives == 0
+
+            self.screen.update()
+            time.sleep(0.01)
+
+            if done:
+                self.inProgress = False
+                return self.reward, self.inProgress, self.score
+
+        return self.reward, self.inProgress, self.score
+
+
 
 
     def hasHit(self):
-            global objective, inProgress
 
             if self.objective.xcor() < -580 or self.objective.xcor() > 570:
-               self.objective.hit(xHit=True, yHit=False)
-               return
+                self.objective.hit(xHit=True, yHit=False)
+                return
 
             if self.objective.ycor() > 270:
-               self.objective.hit(xHit=False, yHit=True)
-               return
+                self.objective.hit(xHit=False, yHit=True)
+                return
 
             if self.objective.ycor() < -280:
 
@@ -110,41 +109,40 @@ class game:
             return
 
     def paddleHit(self):
-        global objective, player
+
         playerX = self.player.xcor()
-        self.objectiveX =self.objective.xcor()
+        self.objectiveX = self.objective.xcor()
 
         if self.objective.distance(self.player) < 110 and self.objective.ycor() < -250:
             if playerX > 0:
                 if self.objectiveX > playerX:
-                   self.objective.hit(xHit=True, yHit=True)
-                   return
+                    self.objective.hit(xHit=True, yHit=True)
+                    return
                 else:
-                   self.objective.hit(xHit=False, yHit=True)
-                   return
+                    self.objective.hit(xHit=False, yHit=True)
+                    return
 
             elif playerX < 0:
                 if self.objectiveX < playerX:
-                   self.objective.hit(xHit=True, yHit=True)
-                   return
+                    self.objective.hit(xHit=True, yHit=True)
+                    return
                 else:
-                   self.objective.hit(xHit=False, yHit=True)
-                   return
+                    self.objective.hit(xHit=False, yHit=True)
+                    return
 
 
             else:
                 if self.objectiveX > playerX:
-                   self.objective.hit(xHit=True, yHit=True)
-                   return
+                    self.objective.hit(xHit=True, yHit=True)
+                    return
                 elif self.objectiveX < playerX:
-                   self.objective.hit(xHit=True, yHit=True)
-                   return
+                    self.objective.hit(xHit=True, yHit=True)
+                    return
                 else:
-                   self.objective.hit(xHit=False, yHit=True)
-                   return
+                    self.objective.hit(xHit=False, yHit=True)
+                    return
 
     def blockHit(self):
-            global objective, bricks
 
             for brick in self.bricks.bricks:
                 if self.objective.distance(brick) < 40:
@@ -157,15 +155,20 @@ class game:
                         brick.goto(3000, 3000)
                         self.bricks.bricks.remove(brick)
                     if self.objective.xcor() < brick.left_wall:
-                       self.objective.hit(xHit=True, yHit=False)
+                        self.objective.hit(xHit=True, yHit=False)
                     elif self.objective.xcor() > brick.right_wall:
-                       self.objective.hit(xHit=True, yHit=False)
+                        self.objective.hit(xHit=True, yHit=False)
                     elif self.objective.ycor() < brick.bottom_wall:
-                       self.objective.hit(xHit=False, yHit=True)
+                        self.objective.hit(xHit=False, yHit=True)
                     elif self.objective.ycor() > brick.upper_wall:
-                       self.objective.hit(xHit=False, yHit=True)
+                        self.objective.hit(xHit=False, yHit=True)
+            return self.reward
 
+    def _move(self, move):
+        if np.array_equal(move, [1, 0, 0]):
+            pass
+        elif np.array_equal(move, [0, 1, 0]):
+            self.player.moveLeft()
+        else:
+            self.player.moveRight()
 
-play = game()
-play.playStep()
-tr.mainloop()
