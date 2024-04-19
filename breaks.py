@@ -31,6 +31,10 @@ class Wall:
         self.bricks = []
         self.createAllLanes()
 
+    def reset(self):
+        self.bricks = []
+        self.createAllLanes()
+
     def createLane(self, yCor):
         for x in range(-570,570,63):
             brick = Brick(x, yCor)
