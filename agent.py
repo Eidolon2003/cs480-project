@@ -7,7 +7,7 @@ from game import PLAY
 import numpy as np
 from collections import deque
 import random
-import turtle as tr
+
 
 
 class NETWORK(nn.Module):
@@ -18,9 +18,7 @@ class NETWORK(nn.Module):
 
     def forward(self, x):
         x = F.relu(self.linear1(x))
-
         x = self.linear2(x)
-
         return x
 
     def save(self, file_name='model.pth'):
@@ -148,6 +146,7 @@ def train():
     agent = PLAYER()
     game = PLAY()
 
+
     while True:
         oldState = agent.state(game)
         move = agent.chooseAction(oldState)
@@ -158,8 +157,8 @@ def train():
         agent.learn(oldState, move, reward, newState, done)
 
         if done:
-
             game.reset()
+
             agent.n_game += 1
             agent.long_mem()
 
@@ -174,7 +173,6 @@ def train():
             mean_score.append(mean_score_temp)
             if agent.n_game % 100 == 0:
                 print(f'Mean score: {mean_score_temp}')
-        done = False
 
 
 if __name__ == '__main__':

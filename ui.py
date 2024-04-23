@@ -27,3 +27,7 @@ class ui(Turtle):
             self.write("Win!", align=center, font=font)
         else:
             self.write("Lost", align=center, font=font)
+
+    def reset(self):
+        self.clear()
+        self.write(f"Breakout", align=center, font=font1)
