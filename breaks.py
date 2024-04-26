@@ -32,9 +32,8 @@ class Wall:
         self.createAllLanes()
 
     def reset(self):
-        print("resetting bricks")
         for brick in self.bricks:
-            self.bricks.remove(brick)
+            brick.hideturtle()
             brick.clear()
         self.bricks = []
         self.createAllLanes()

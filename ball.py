@@ -18,6 +18,14 @@ class Hitter(Turtle):
         new_x = self.xcor() + self.xMove
         self.goto(new_x, new_y)
 
+
+    def nextPos(self):
+        new_y = self.ycor() + self.yMove
+        new_x = self.xcor() + self.xMove
+        return new_x, new_y
+
+
+
     def hit(self, xHit, yHit):
         if xHit:
             self.xMove *= -1

@@ -26,7 +26,7 @@ class PLAY:
 
         self.UI = ui()
         self.UI.text()
-
+        tr.speed("fastest")
         self.score = Scoreboard(lives=5)
 
         self.reward = 0
@@ -57,10 +57,10 @@ class PLAY:
         self.hasHit()
         self.screen.update()
         if len(self.bricks.bricks) == 0:
-            self.reward += 100
+            self.reward += 500
         done = len(self.bricks.bricks) == 0 or self.score.lives == 0
         time.sleep(0.01)
-        print(self.reward)
+
 
         return self.reward, done, self.score
 
@@ -82,7 +82,7 @@ class PLAY:
                 self.reward -= 100
 
                 if self.score.lives == 0:
-                    self.reward -= 250
+                    self.reward -= 200
                     self.UI.gameOver(False)
                     self.inProgress = False
 
@@ -99,33 +99,30 @@ class PLAY:
         self.objectiveX = self.objective.xcor()
 
         if self.objective.distance(self.player) < 110 and self.objective.ycor() < -250:
-            if playerX > 0:
-                if self.objectiveX > playerX:
-                    self.objective.hit(xHit=True, yHit=True)
-                    return
-                else:
-                    self.objective.hit(xHit=False, yHit=True)
-                    return
+            # Check specific collision areas on the paddle
+            paddle_left = playerX - 50
+            paddle_right = playerX + 50
 
-            elif playerX < 0:
-                if self.objectiveX < playerX:
-                    self.objective.hit(xHit=True, yHit=True)
-                    return
-                else:
-                    self.objective.hit(xHit=False, yHit=True)
-                    return
+            if self.objectiveX >= paddle_left and self.objectiveX <= paddle_right:
+                # Ball hit the paddle, adjust trajectory
+                self.objective.hit(xHit=False, yHit=True)
+                self.reward += 50
+                self.objective.sety(self.objective.ycor() + 20)
+                return
+            elif self.objectiveX < paddle_left:
+                # Ball hit left side of paddle, adjust trajectory
+                self.objective.hit(xHit=True, yHit=True)
+                self.reward += 50
+                self.objective.sety(self.objective.ycor() + 20)
+                return
+            elif self.objectiveX > paddle_right:
+                # Ball hit right side of paddle, adjust trajectory
+                self.objective.hit(xHit=True, yHit=True)
+                self.reward += 50
+                self.objective.sety(self.objective.ycor() + 20)
+                return
 
-
-            else:
-                if self.objectiveX > playerX:
-                    self.objective.hit(xHit=True, yHit=True)
-                    return
-                elif self.objectiveX < playerX:
-                    self.objective.hit(xHit=True, yHit=True)
-                    return
-                else:
-                    self.objective.hit(xHit=False, yHit=True)
-                    return
+        return
 
     def blockHit(self):
 
@@ -133,7 +130,7 @@ class PLAY:
             if self.objective.distance(brick) < 40:
                 self.score.increaseScore()
                 brick.quantity -= 1
-                self.reward += 10
+                self.reward += 25
                 if brick.quantity == 0:
                     brick.clear()
                     brick.goto(3000, 3000)
@@ -149,23 +146,12 @@ class PLAY:
         return
 
     def _move(self, move):
-        if self.player.xcor() >= 565:
-            if np.array_equal(move, [1, 0, 0]):
-                pass
-            elif np.array_equal(move, [0, 1, 0]):
-                self.player.moveLeft()
-        elif self.player.xcor() <= -575:
-            if np.array_equal(move, [1, 0, 0]):
-                pass
-            elif np.array_equal(move, [0, 0, 1]):
-                self.player.moveRight()
+        if move == [0, 1, 0] and self.player.xcor() >= -560:
+            self.player.moveLeft()
+        elif move == [0,0,1] and self.player.xcor() <= 550:
+            self.player.moveRight()
         else:
-            if np.array_equal(move, [1, 0, 0]):
-                pass
-            elif np.array_equal(move, [0, 1, 0]):
-                self.player.moveLeft()
-            elif np.array_equal(move, [0, 0, 1]):
-                self.player.moveRight()
+            pass
 
 
 
