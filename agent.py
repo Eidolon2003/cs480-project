@@ -18,7 +18,7 @@ class NETWORK(nn.Module):
 
     def forward(self, x):
         x = F.relu(self.linear1(x))
-        x = self.linear2(x)
+        x= self.linear2(x)
         return x
 
     def save(self, file_name='model.pth'):
@@ -36,8 +36,8 @@ class NETWORK(nn.Module):
 
 class MODEL:
     def __init__(self, model):
-        self.learning_rate = 0.0005
-        self.discount_rate = 0.9
+        self.learningRate = 0.001
+        self.discountRate = 0.9
         self.model = model
         self.optimize = optim.Adam(model.parameters(), lr=self.learning_rate)
         self.criterion = nn.MSELoss()
@@ -61,12 +61,12 @@ class MODEL:
         pred = self.model(state)
 
         target = pred.clone()
-        for idx in range(len(done)):
-            Q_new = reward[idx]
-            if not done[idx]:
-                Q_new = reward[idx] + self.learning_rate * torch.max(self.model(nextState[idx]))
+        for x in range(len(done)):
+            Q_new = reward[x]
+            if not done[x]:
+                Q_new = reward[x] + self.discountRate * torch.max(self.model(nextState[x]))
 
-            target[idx][torch.argmax(action[idx]).item()] = Q_new
+            target[x][torch.argmax(action[x]).item()] = Q_new
 
         self.optimize.zero_grad()
 
@@ -78,9 +78,7 @@ class MODEL:
 class PLAYER:
 
     def __init__(self):
-        self.n_game = 0
-        self.epsilon =150
-        self.gamma = 0.9
+        self.nGame = 0
         self.mem = deque(maxlen=20000)
         self.model = NETWORK(9, 3)
         self.model.load()
@@ -91,7 +89,8 @@ class PLAYER:
         ball = game.objective
         brick = game.bricks
         brickLayout = [pos for brick in brick.bricks for pos in (brick.xcor(), brick.ycor())]
-        newX, newY = ball.nextPos()
+        newX = ball.xcor() + ball.xMove
+        newY = ball.ycor() + ball.yMove
         state = [
 
             ball.xcor(),
@@ -121,25 +120,29 @@ class PLAYER:
 
     def long_mem(self):
         if len(self.mem) > 64:
-            long_sample = random.sample(self.mem, 64)
+            longSample = random.sample(self.mem, 64)
         else:
-            long_sample = self.mem
-        thisState, thisAction, thisReward, thisNextState, thisDone = zip(*long_sample)
+            longSample = self.mem
+        thisState, thisAction, thisReward, thisNextState, thisDone = zip(*longSample)
         self.trained.trainStep(thisState, thisAction, thisReward, thisNextState, thisDone)
 
     def short_mem(self, action, state, reward, nextState, done):
         self.trained.trainStep(state, action, reward, nextState, done)
 
+    # utilizes simple greedy formula to decide between
+    # learned move, and random move,
+    # each step
     def chooseAction(self, state, increment):
-
+        # only allow move every other frame, to avoid bot spam
         if increment % 2 == 0:
-            self.epsilon = 100 - self.n_game
+            self.epsilon = 80 - self.nGame
 
             action = [0, 0, 0]
             if random.randint(0, 200) < self.epsilon:
                 move = random.randint(0, 2)
                 action[move] = 1
             else:
+                # pick, then use move
                 nextState = torch.tensor(state, dtype=torch.float)
                 prediction = self.model(nextState)
                 move = torch.argmax(prediction).item()
@@ -155,15 +158,21 @@ class PLAYER:
 #
 def train():
     scores = []
-    mean_score = []
+    meanScore = []
     total = 0
     highest = 0
     agent = PLAYER()
     game = PLAY()
     increment = 0
+    tempLives = game.score.lives
+    reward = 0
 
-
+    # set up loop to make game continue forever until terminated
     while True:
+        if increment % 20 == 0:
+            if tempLives == game.score.lives:
+                reward += 100
+            tempLives = game.score.lives
         oldState = agent.state(game)
         move = agent.chooseAction(oldState, increment)
         reward, done, score = game.playStep(move)
@@ -173,6 +182,8 @@ def train():
         agent.learn(oldState, move, reward, newState, done)
 
         increment += 1
+        # done is sent in the event that
+        # there are no bricks left, or when lives = 0
         if done:
 
             increment = 0
@@ -180,20 +191,22 @@ def train():
 
             torch.cuda.empty_cache()
 
-            agent.n_game += 1
+            agent.nGame += 1
             agent.long_mem()
 
+
             if reward > highest:
+                #agent.model.save()
                 highest = reward
-                agent.model.save()
-            print('Game: ', agent.n_game, ' Score: ', reward, ' Record: ', highest)
+
+            print('Game: ', agent.nGame, ' Score: ', reward, ' Record: ', highest)
 
             scores.append(reward)
             total += reward
-            mean_score_temp = total / agent.n_game
-            mean_score.append(mean_score_temp)
-            if agent.n_game % 100 == 0:
-                print(f'Mean score: {mean_score_temp}')
+            meanScoreTemp = total / agent.nGame
+            meanScore.append(meanScoreTemp)
+            if agent.nGame % 100 == 0:
+                print(f'Mean score: {meanScoreTemp}')
 
 
 if __name__ == '__main__':

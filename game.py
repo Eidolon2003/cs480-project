@@ -20,6 +20,8 @@ class PLAY:
 
         self.screen = tr.Screen()
 
+
+
         self.screen.setup(width=1200, height=600)
         self.screen.bgcolor('black')
         self.screen.tracer(0)
@@ -59,7 +61,7 @@ class PLAY:
         if len(self.bricks.bricks) == 0:
             self.reward += 500
         done = len(self.bricks.bricks) == 0 or self.score.lives == 0
-        time.sleep(0.01)
+        time.sleep(0.0001)
 
 
         return self.reward, done, self.score
@@ -82,7 +84,7 @@ class PLAY:
                 self.reward -= 100
 
                 if self.score.lives == 0:
-                    self.reward -= 200
+                    self.reward -= 150
                     self.UI.gameOver(False)
                     self.inProgress = False
 
@@ -104,22 +106,22 @@ class PLAY:
             paddle_right = playerX + 50
 
             if self.objectiveX >= paddle_left and self.objectiveX <= paddle_right:
-                # Ball hit the paddle, adjust trajectory
+
                 self.objective.hit(xHit=False, yHit=True)
                 self.reward += 50
-                self.objective.sety(self.objective.ycor() + 20)
+                self.objective.sety(self.objective.ycor() + 15)
                 return
             elif self.objectiveX < paddle_left:
-                # Ball hit left side of paddle, adjust trajectory
+
                 self.objective.hit(xHit=True, yHit=True)
                 self.reward += 50
-                self.objective.sety(self.objective.ycor() + 20)
+                self.objective.sety(self.objective.ycor() + 15)
                 return
             elif self.objectiveX > paddle_right:
-                # Ball hit right side of paddle, adjust trajectory
+
                 self.objective.hit(xHit=True, yHit=True)
                 self.reward += 50
-                self.objective.sety(self.objective.ycor() + 20)
+                self.objective.sety(self.objective.ycor() + 15)
                 return
 
         return
@@ -130,7 +132,7 @@ class PLAY:
             if self.objective.distance(brick) < 40:
                 self.score.increaseScore()
                 brick.quantity -= 1
-                self.reward += 25
+                self.reward += 10
                 if brick.quantity == 0:
                     brick.clear()
                     brick.goto(3000, 3000)
